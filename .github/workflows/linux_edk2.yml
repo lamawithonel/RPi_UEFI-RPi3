@@ -32,6 +32,9 @@ jobs:
         build -a AARCH64 -t GCC5 -p edk2-platforms/Platform/RaspberryPi/RPi3/RPi3.dsc -b DEBUG --pcd gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVendor=L"https://github.com/pftf/RPi3" --pcd gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVersionString=L"UEFI Firmware ${{steps.set_version.outputs.version}}" ${BUILD_FLAGS}
         build -a AARCH64 -t GCC5 -p edk2-platforms/Platform/RaspberryPi/RPi3/RPi3.dsc -b RELEASE --pcd gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVendor=L"https://github.com/pftf/RPi3" --pcd gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVersionString=L"UEFI Firmware ${{steps.set_version.outputs.version}}" ${BUILD_FLAGS}
         cp Build/RPi3/RELEASE_GCC5/FV/RPI_EFI.fd .
+    - name: List files
+      run: |
+        find . -type f -print0 | xargs -0 ls -lh
     - name: Upload UEFI firmware artifacts
       uses: actions/upload-artifact@v2
       with:
@@ -47,9 +50,6 @@ jobs:
         curl -O -L https://github.com/raspberrypi/firmware/raw/master/boot/bcm2710-rpi-3-b.dtb
         curl -O -L https://github.com/raspberrypi/firmware/raw/master/boot/bcm2710-rpi-3-b-plus.dtb
         curl -O -L https://github.com/raspberrypi/firmware/raw/master/boot/bcm2710-rpi-cm3.dtb
-    - name: List files
-      run: |
-        find . -type f -print0 | xargs -0 ls -lh
     - name: Create UEFI firmware archive
       run: tar -c -I zstd -v -f RPi3_UEFI_Firmware_${{steps.set_version.outputs.version}}.tar.zstd RPI_EFI.fd bootcode.bin config.txt fixup.dat start.elf *.dtb firmware
     - name: Display SHA-256
