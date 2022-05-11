@@ -3,10 +3,8 @@
 
 name: UEFI firmware - EDK2 build
 
-on:  
-  push:
-    tags:
-      - '*'
+on:
+  - push
 
 jobs:
   build:
@@ -34,6 +32,9 @@ jobs:
         build -a AARCH64 -t GCC5 -p edk2-platforms/Platform/RaspberryPi/RPi3/RPi3.dsc -b DEBUG --pcd gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVendor=L"https://github.com/pftf/RPi3" --pcd gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVersionString=L"UEFI Firmware ${{steps.set_version.outputs.version}}" ${BUILD_FLAGS}
         build -a AARCH64 -t GCC5 -p edk2-platforms/Platform/RaspberryPi/RPi3/RPi3.dsc -b RELEASE --pcd gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVendor=L"https://github.com/pftf/RPi3" --pcd gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVersionString=L"UEFI Firmware ${{steps.set_version.outputs.version}}" ${BUILD_FLAGS}
         cp Build/RPi3/RELEASE_GCC5/FV/RPI_EFI.fd .
+    - name: List files
+      run: |
+        find . -type f -print0 | xargs -0 ls -lh
     - name: Upload UEFI firmware artifacts
       uses: actions/upload-artifact@v2
       with:
@@ -50,9 +51,9 @@ jobs:
         curl -O -L https://github.com/raspberrypi/firmware/raw/master/boot/bcm2710-rpi-3-b-plus.dtb
         curl -O -L https://github.com/raspberrypi/firmware/raw/master/boot/bcm2710-rpi-cm3.dtb
     - name: Create UEFI firmware archive
-      run: zip -r RPi3_UEFI_Firmware_${{steps.set_version.outputs.version}}.zip RPI_EFI.fd bootcode.bin config.txt fixup.dat start.elf Readme.md *.dtb firmware
+      run: tar -c -I zstd -v -f RPi3_UEFI_Firmware_${{steps.set_version.outputs.version}}.tar.zstd RPI_EFI.fd bootcode.bin config.txt fixup.dat start.elf *.dtb firmware
     - name: Display SHA-256
-      run: sha256sum Build/RPi3/DEBUG_GCC5/FV/RPI_EFI.fd Build/RPi3/RELEASE_GCC5/FV/RPI_EFI.fd RPi3_UEFI_Firmware_${{steps.set_version.outputs.version}}.zip
+      run: sha256sum Build/RPi3/DEBUG_GCC5/FV/RPI_EFI.fd Build/RPi3/RELEASE_GCC5/FV/RPI_EFI.fd RPi3_UEFI_Firmware_${{steps.set_version.outputs.version}}.tar.zstd
     - name: Create release
       id: create_release
       uses: actions/create-release@v1
@@ -70,6 +71,6 @@ jobs:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       with:
         upload_url: ${{steps.create_release.outputs.upload_url}}
-        asset_path: RPi3_UEFI_Firmware_${{steps.set_version.outputs.version}}.zip
-        asset_name: RPi3_UEFI_Firmware_${{steps.set_version.outputs.version}}.zip
-        asset_content_type: application/zip
+        asset_path: RPi3_UEFI_Firmware_${{steps.set_version.outputs.version}}.tar.zstd
+        asset_name: RPi3_UEFI_Firmware_${{steps.set_version.outputs.version}}.tar.zstd
+        asset_content_type: application/zstd
